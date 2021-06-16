@@ -15,17 +15,19 @@ class App extends Component {
 
       // Set up Zokrates stuff
       const zokratesProvider = await initialize();
-      //const source = "def main(private field a, private field b) -> (field): return a * b";
-      //const source = "def main(private field a, field b) -> (field): \nfield y = if a < b then 0 else 1 fi \n return y";
-      /** 
-      const source = 'import "hashes/sha256/1024bitPadded.zok" as sha256 \n' +
-                        'def main(private field nonce, private field bid, field bucket, field hash) -> (field): \n' +
-                          'assert(bid > bucket) \n' +
-                          'field[256] computed_hash = sha256(bid,nonce) \n' +
-                          'assert(computed_hash == hash)' +
-                          'return 1';
-      */
-      const source = 'import "hashes/sha256/512bit" as sha256 \n' +
+
+      // (1) This proof will simply fail if the assert fails; so nothing will be returned if a <= b, and 1 will be returned
+      //    when a > b.
+      const source1 = "def main(private field a, private field b) -> (field): assert(a > b) \n return 1";
+
+       // (2) This proof will return 0 or 1 depending on the relationship of a and b; then, the returned value can be tested
+       //     against a certain excepted value when computing the proof. It's just that I don't know how this could be accomplished
+       //     in zokrates-js, so ¯\_(ツ)_/¯
+      const source2 = "def main(private field a, field b) -> (field): \nfield y = if a < b then 0 else 1 fi \n return y";
+
+     // (3) EXTREMELY HACKY strategy for computing a hash from two input values (I did this because I didn't know how to pass
+     //    qarrays as input)
+      const source3 = 'import "hashes/sha256/512bit" as sha256 \n' +
                       'from "EMBED" import unpack \n' + 
                       'import "utils/casts/u32_from_bits" as from_bits \n' +
                           'def main(private field nonce, private field bid) -> (u32[8]): \n' +
@@ -37,12 +39,21 @@ class App extends Component {
                             'u32[8] bid_arr = [0,0,0,0,0,0,0,formatted_bid] \n' +
                             'u32[8] computed_hash = sha256(bid_arr,nonce_arr) \n' +
                             'return computed_hash';
+
+      // (4) COMING UP: the actual function we need
       // Parameter: private: nonce, private: bid, public: bucket, public: hash
       // (1) Bid + nonce = hash (sha256)
       // (2) Bid in bucket
-      //const source = "def main(private field a, field b) -> (bool): \n return a > b";
+      /** 
+      const source = 'import "hashes/sha256/1024bitPadded.zok" as sha256 \n' +
+                        'def main(private field nonce, private field bid, field bucket, field hash) -> (field): \n' +
+                          'assert(bid > bucket) \n' +
+                          'field[256] computed_hash = sha256(bid,nonce) \n' +
+                          'assert(computed_hash == hash)' +
+                          'return 1';
+      */
       // compilation
-      const artifacts = zokratesProvider.compile(source);
+      const artifacts = zokratesProvider.compile(source3);
       // run setup
       const keypair = zokratesProvider.setup(artifacts.program);
       // export solidity verifier
