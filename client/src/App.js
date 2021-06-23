@@ -6,7 +6,7 @@ import { initialize } from 'zokrates-js';
 import "./App.css";
 
 class App extends Component {
-  state = { storageValue: 0, web3: null, accounts: null, contract: null, zokratesProvider: null, artifacts: null, keypair: null, result: null};
+  state = { storageValue: 0, web3: null, accounts: null, contract: null, zokratesProvider: null, artifacts: null, keypair: null, result: null, hash: null};
 
   componentDidMount = async () => {
     try {
@@ -40,6 +40,30 @@ class App extends Component {
                             'u32[8] computed_hash = sha256(bid_arr,nonce_arr) \n' +
                             'return computed_hash';
 
+      /**
+       * 'def pack256(field[256] bits) -> (field): \n' +
+                      'field out = 0 \n' +
+	                    'for field j in 0..256 do \n' +
+		                  'field i = 256 - (j + 1) \n' +
+		                  'out = out + bits[i] * (2 ** j) \n' +
+	                    'endfor \n' +
+                      'return out \n' +
+       */
+
+      const source4 = 'import "utils/pack/u32/nonStrictUnpack256" as unpack256u \n' +
+                      'import "utils/pack/u32/pack256.zok" as pack256u \n' +
+                      'import "hashes/sha256/512bit" as sha256 \n' +
+                      'def main(private field nonce, private field bid) -> (field): \n' +
+                      'u32[8] unpacked_nonce = unpack256u(nonce) \n' +
+                      'u32[8] unpacked_bid = unpack256u(bid) \n' +
+                      'u32[8] computed_hash = sha256(unpacked_bid,unpacked_nonce) \n' +
+                      'field packed_hash = pack256u(computed_hash) \n' +
+                      'return packed_hash';
+
+      const source5 = 'import "hashes/sha256/512bitPacked.zok" as sha256 \n' +
+                      'def main(field i, field j) -> (field[2]): \n' +
+                      'field[4] hashMe = [0,0,i,j] \n' +
+                      'return sha256(hashMe)'
       // (4) COMING UP: the actual function we need
       // Parameter: private: nonce, private: bid, public: bucket, public: hash
       // (1) Bid + nonce = hash (sha256)
@@ -53,7 +77,7 @@ class App extends Component {
                           'return 1';
       */
       // compilation
-      const artifacts = zokratesProvider.compile(source3);
+      const artifacts = zokratesProvider.compile(source4);
       // run setup
       const keypair = zokratesProvider.setup(artifacts.program);
       // export solidity verifier
@@ -87,13 +111,15 @@ class App extends Component {
 
     // computation
     try {
-      const { witness, output } = zokratesProvider.computeWitness(artifacts, ["13","4222"]);
+      //const { witness, output } = zokratesProvider.computeWitness(artifacts, ["13","4222"]);
+      const { witness, output } = zokratesProvider.computeWitness(artifacts, ["13","31"]);
       const proof = zokratesProvider.generateProof(artifacts.program, witness, keypair.pk);
       const res = zokratesProvider.verify(keypair.vk, proof);
 
       console.log(res,keypair.vk,proof);
 
       this.setState({ result: res});
+      this.setState({ hash: output})
     } catch (error) {
       console.log(error);
       this.setState({ result: false});
@@ -112,6 +138,7 @@ class App extends Component {
       <div className="App">
         <h1>Zokrates React Tiny Example !</h1>
         <div>Computation result is: {this.state.result? "Proof is correct" : "Proof failed"}</div>
+        <div>Output is: {this.state.hash}</div>
       </div>
     );
   }
