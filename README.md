@@ -61,7 +61,7 @@ module.exports = function override (config, env) {
 
 ### Remark
 
-I'm not entirely sure if it is necessary to have Rust installed locally in order to use `zokrates-js`. If something isn't working, try setting up rust like in the image shown below (this should approximately be what to do, in case that isn't working the screenshot at least gives clues regarding what specifically is required, however the exact commands might be outdated and the tools may have to be acquired from different sources 😬)
+I'm not entirely sure if it is necessary to have Rust installed locally in order to use `zokrates-js`. If something isn't working, try setting up rust like in the IMAGE (it's a screenshot from another GitHub README, so don't be fooled, it is an image tho and not an actual part of THIS README) shown below (this should approximately be what to do, in case that isn't working the screenshot at least gives clues regarding what specifically is required, however the exact commands might be outdated and the tools may have to be acquired from different sources 😬)
 
 ![Approximate strategy for setting up Rust for WASM.](rust_install.png)
 
