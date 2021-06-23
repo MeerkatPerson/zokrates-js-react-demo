@@ -75,7 +75,26 @@ When using `zokrates-js`, the actual zokrates code has to be provided as a Strin
 
 ## Writing some Zokrates proofs
 
-### (a) Hashing
+### (a) Simple interval testing
+
+Prove that (secret) number is larger than some (public) number. Easy as it gets. Code:
+
+```
+def main(private field a, public field b) -> (field): 
+  assert(a > b) \n return 1
+```
+
+This proof will simply work out just fine and return `true` if the hidden number is in fact larger than the value it is compared to, and fail and therefore return nothing if it isn't (failing `assert`-statement = entire proof failing).
+
+Assume you have an array of values that ascend in a systematic fashion, like so:
+
+```
+const buckets = [0, 5, 10, 20, 40, 80]
+```
+
+Then, in theory, a value could be compared against each of the values in the array to determine which 'bucket' a given (secret) value falls into (see `client/App.js` for an initial implementation ... attempt).
+
+### (b) Hashing
 
 When hashing in a 'normal' environment, steps are usually pretty straightforward - e.g., a sha256 hash in Python:
 

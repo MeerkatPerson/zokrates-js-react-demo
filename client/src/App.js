@@ -6,7 +6,7 @@ import { initialize } from 'zokrates-js';
 import "./App.css";
 
 class App extends Component {
-  state = { storageValue: 0, web3: null, accounts: null, contract: null, zokratesProvider: null, artifacts: null, keypair: null, result: null, hash: null};
+  state = { storageValue: 0, web3: null, accounts: null, contract: null, zokratesProvider: null, artifacts: null, keypair: null, bid: null, bucket: null};
 
   componentDidMount = async () => {
     try {
@@ -18,7 +18,7 @@ class App extends Component {
 
       // (1) This proof will simply fail if the assert fails; so nothing will be returned if a <= b, and 1 will be returned
       //    when a > b.
-      const source1 = "def main(private field a, private field b) -> (field): assert(a > b) \n return 1";
+      const source1 = "def main(private field a, public field b) -> (field): assert(a > b) \n return 1";
 
        // (2) This proof will return 0 or 1 depending on the relationship of a and b; then, the returned value can be tested
        //     against a certain excepted value when computing the proof. It's just that I don't know how this could be accomplished
@@ -77,7 +77,7 @@ class App extends Component {
                           'return 1';
       */
       // compilation
-      const artifacts = zokratesProvider.compile(source4);
+      const artifacts = zokratesProvider.compile(source1);
       // run setup
       const keypair = zokratesProvider.setup(artifacts.program);
       // export solidity verifier
@@ -109,24 +109,39 @@ class App extends Component {
   runExample = async () => {
     const { accounts, contract, zokratesProvider, artifacts, keypair} = this.state;
 
-    // computation
-    try {
-      //const { witness, output } = zokratesProvider.computeWitness(artifacts, ["13","4222"]);
-      const { witness, output } = zokratesProvider.computeWitness(artifacts, ["13","31"]);
-      const proof = zokratesProvider.generateProof(artifacts.program, witness, keypair.pk);
-      const res = zokratesProvider.verify(keypair.vk, proof);
+    /** 
+     * Test incoming bids against an array of values ('cascading buckets')
+     */
 
-      console.log(res,keypair.vk,proof);
+    const buckets = [0, 5, 10, 20, 40, 80]
 
-      this.setState({ result: res});
-      this.setState({ hash: output})
-    } catch (error) {
-      console.log(error);
-      this.setState({ result: false});
-    }
+    this.setState({ bid: 25})
 
-    // generate proof
-    
+    let caught = false
+
+    let ind = 1
+
+    this.setState({ bucket: buckets[0]})
+
+    console.log('hi max :)');
+
+    while (! caught && ind < buckets.length) {
+     
+      console.log('hi trever :)');
+
+      try {
+        const { witness, output } = zokratesProvider.computeWitness(artifacts, [String(this.state.bid),String(buckets[ind])]);
+        const proof = zokratesProvider.generateProof(artifacts.program, witness, keypair.pk);
+        const res = zokratesProvider.verify(keypair.vk, proof);
+        console.log(res,keypair.vk,proof);
+        this.setState({ bucket: buckets[ind++]});
+      } catch (error) {
+        console.log(error);
+        //this.setState({ result: false})
+        caught = true
+      }
+
+    }  
 
   };
 
@@ -137,8 +152,8 @@ class App extends Component {
     return (
       <div className="App">
         <h1>Zokrates React Tiny Example !</h1>
-        <div>Computation result is: {this.state.result? "Proof is correct" : "Proof failed"}</div>
-        <div>Output is: {this.state.hash}</div>
+        <div>Bid: {this.state.bid} </div>
+        <div>Bucket: {this.state.bucket}</div>
       </div>
     );
   }
